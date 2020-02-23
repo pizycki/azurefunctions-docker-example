@@ -8,6 +8,8 @@ using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Microsoft.WindowsAzure.Storage;
+using Microsoft.WindowsAzure.Storage.Table;
 
 public static class HttpTriggerExample
 {
@@ -27,9 +29,22 @@ public static class HttpTriggerExample
         name = name ?? data?.name;
         fortune = generateFortune();
 
+        await LogFortune(fortune);
+
         return name != null
             ? (ActionResult)new OkObjectResult($"Hello, {name}. Here's your fortune: \n\n{fortune}")
             : new BadRequestObjectResult("Please pass a name on the query string or in the request body");
+    }
+
+    public static async Task LogFortune(string fortune) {
+        var fortuneTable = await GetTableReferenceAsync("fortunes");
+        var fortuneEntity = new FortuneEntity {
+            PartitionKey = "fortunes",
+            RowKey = Guid.NewGuid().ToString(),
+            Text = fortune
+        };
+        var insert = TableOperation.Insert(fortuneEntity);
+        await fortuneTable.ExecuteAsync(insert);
     }
 
     public static string generateFortune()
@@ -80,5 +95,20 @@ public static class HttpTriggerExample
         int number = random.Next(fortune.Count - 1);
 
         return fortune[number];
+    }
+
+    public static async Task<CloudTable> GetTableReferenceAsync(string tableName)
+    {
+        var connString = "AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;DefaultEndpointsProtocol=http;BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;QueueEndpoint=http://127.0.0.1:10001/devstoreaccount1;TableEndpoint=http://127.0.0.1:10002/devstoreaccount1;";
+        var cloudStorageAccount = CloudStorageAccount.Parse(connString);
+        var cloudTableClient = cloudStorageAccount.CreateCloudTableClient();
+        var cloudTable = cloudTableClient.GetTableReference(tableName);
+        await cloudTable.CreateIfNotExistsAsync();
+
+        return cloudTable;
+    }
+
+    public class FortuneEntity : TableEntity{
+        public string Text { get; set; }
     }
 }
