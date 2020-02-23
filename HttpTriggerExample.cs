@@ -29,7 +29,7 @@ public static class HttpTriggerExample
         name = name ?? data?.name;
         fortune = generateFortune();
 
-        await LogFortune(fortune);
+        //await LogFortune(fortune);
 
         return name != null
             ? (ActionResult)new OkObjectResult($"Hello, {name}. Here's your fortune: \n\n{fortune}")

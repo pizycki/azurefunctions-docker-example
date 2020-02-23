@@ -1,0 +1,14 @@
+version: '3'
+services:
+  fortune:
+    build: .
+    ports:
+      - "8080:80"
+  azurite:
+    image: "arafato/azurite"
+    ports: 
+      - "10000:10000"
+      - "10001:10001"
+      - "10002:10002"
+    volumes:
+      - "/azurite-storage:/opt/azurite/folder"
